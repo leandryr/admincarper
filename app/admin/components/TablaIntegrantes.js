@@ -37,26 +37,30 @@ export default function TablaIntegrantes({ onEditar, rol }) {
   const [mensaje, setMensaje] = useState('');
   const [tipoMensaje, setTipoMensaje] = useState('success');
 
-  // Tu diálogo de confirmación de número de documento
+  const [confirmEliminarOpen, setConfirmEliminarOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [docConfirmado, setDocConfirmado] = useState('');
   const [integranteAEliminar, setIntegranteAEliminar] = useState(null);
 
-  // Nuevo: diálogo previo de “¿Eliminar integrante?”
-  const [confirmEliminarOpen, setConfirmEliminarOpen] = useState(false);
-
   useEffect(() => {
-    fetchData();
+    fetch('/api/integrantes')
+      .then(res => res.json())
+      .then(json => setData(json))
+      .catch(() => {
+        setTipoMensaje('error');
+        setMensaje('Error al cargar registros ❌');
+      });
   }, []);
 
-  const fetchData = async () => {
+  const registrarHistorial = async (accion) => {
     try {
-      const res = await fetch('/api/integrantes');
-      const json = await res.json();
-      setData(json);
-    } catch {
-      setTipoMensaje('error');
-      setMensaje('Error al cargar registros ❌');
+      await fetch('/api/historial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion }),
+      });
+    } catch (error) {
+      console.error('Error registrando historial:', error);
     }
   };
 
@@ -84,11 +88,10 @@ export default function TablaIntegrantes({ onEditar, rol }) {
     }
   };
 
-  // Lógica final de borrado tras validar documento
   const eliminarIntegrante = async () => {
-    if (!integranteAEliminar || docConfirmado !== integranteAEliminar.docNumero) {
+    if (!integranteAEliminar || docConfirmado !== integranteAEliminar.telefono) {
       setTipoMensaje('error');
-      setMensaje('❌ Número de documento incorrecto');
+      setMensaje('❌ Número de teléfono incorrecto');
       return;
     }
     try {
@@ -114,9 +117,8 @@ export default function TablaIntegrantes({ onEditar, rol }) {
   };
 
   const filtrados = data.filter(i =>
-    [i.nombres, i.apPaterno, i.codigo, i.docNumero, i.email].some(c =>
-      c?.toLowerCase().includes(filtro.toLowerCase())
-    )
+    [i.nombres, i.apPaterno, i.apMaterno, i.codigo, i.telefono]
+      .some(c => c?.toLowerCase().includes(filtro.toLowerCase()))
   );
 
   return (
@@ -134,7 +136,7 @@ export default function TablaIntegrantes({ onEditar, rol }) {
 
       <TextField
         fullWidth
-        label="Buscar por nombre, código, documento o correo"
+        label="Buscar por nombre, código o teléfono"
         value={filtro}
         onChange={e => setFiltro(e.target.value)}
         margin="normal"
@@ -145,11 +147,11 @@ export default function TablaIntegrantes({ onEditar, rol }) {
           <TableHead>
             <TableRow>
               <TableCell><strong>Código</strong></TableCell>
-              <TableCell><strong>Nombre</strong></TableCell>
-              <TableCell><strong>Apellido</strong></TableCell>
+              <TableCell><strong>Nombres</strong></TableCell>
+              <TableCell><strong>Apellido P</strong></TableCell>
+              <TableCell><strong>Apellido M</strong></TableCell>
               <TableCell><strong>F. Nacimiento</strong></TableCell>
-              <TableCell><strong>Identificación</strong></TableCell>
-              <TableCell><strong>Correo</strong></TableCell>
+              <TableCell><strong>N° Teléfono</strong></TableCell>
               <TableCell><strong>Sexo</strong></TableCell>
               <TableCell><strong>Acciones</strong></TableCell>
             </TableRow>
@@ -160,12 +162,12 @@ export default function TablaIntegrantes({ onEditar, rol }) {
                 <TableCell>{row.codigo}</TableCell>
                 <TableCell>{row.nombres}</TableCell>
                 <TableCell>{row.apPaterno}</TableCell>
+                <TableCell>{row.apMaterno}</TableCell>
                 <TableCell>
                   {row.fechaNacimiento?.dia}/{row.fechaNacimiento?.mes}/{row.fechaNacimiento?.anio}
                 </TableCell>
-                <TableCell>{row.tipoDoc} {row.docNumero}</TableCell>
-                <TableCell>{row.email}</TableCell>
-                <TableCell>{row.sexo}</TableCell>
+                <TableCell>{row.telefono}</TableCell>
+                <TableCell>{row.sexo === 'M' ? 'Masculino' : 'Femenino'}</TableCell>
                 <TableCell>
                   <Box display="flex" flexWrap="wrap" gap={1}>
                     <Tooltip title="Ver detalles">
@@ -178,19 +180,21 @@ export default function TablaIntegrantes({ onEditar, rol }) {
                       </Button>
                     </Tooltip>
 
+                    {(rol === 'superadmin' || rol === 'asistente') && (
+                      <Tooltip title="Editar datos">
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="primary"
+                          onClick={() => onEditar(row)}
+                        >
+                          Editar
+                        </Button>
+                      </Tooltip>
+                    )}
+
                     {rol === 'superadmin' && (
                       <>
-                        <Tooltip title="Editar datos">
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            color="primary"
-                            onClick={() => onEditar(row)}
-                          >
-                            Editar
-                          </Button>
-                        </Tooltip>
-
                         <Tooltip title={row.status === 'ACTIVO' ? 'Desactivar' : 'Activar'}>
                           <Button
                             variant="outlined"
@@ -208,20 +212,20 @@ export default function TablaIntegrantes({ onEditar, rol }) {
                           </Button>
                         </Tooltip>
 
-                        <Tooltip title={row.participacion === 'SI' ? 'Quitar participación' : 'Activar participación'}>
+                        <Tooltip title={row.deportista === 'SI' ? 'Quitar deportista' : 'Activar deportista'}>
                           <Button
                             variant="outlined"
                             size="small"
-                            color={row.participacion === 'SI' ? 'error' : 'secondary'}
+                            color={row.deportista === 'SI' ? 'error' : 'secondary'}
                             onClick={() =>
                               actualizarCampo(
                                 row._id,
-                                'participacion',
-                                row.participacion === 'SI' ? 'NO' : 'SI'
+                                'deportista',
+                                row.deportista === 'SI' ? 'NO' : 'SI'
                               )
                             }
                           >
-                            {row.participacion === 'SI' ? 'Quitar Participación' : 'Participar'}
+                            {row.deportista === 'SI' ? 'Quitar Deportista' : 'Deportista'}
                           </Button>
                         </Tooltip>
 
@@ -231,7 +235,6 @@ export default function TablaIntegrantes({ onEditar, rol }) {
                             size="small"
                             color="error"
                             onClick={() => {
-                              // Abre primero el diálogo de confirmación genérico
                               setIntegranteAEliminar(row);
                               setConfirmEliminarOpen(true);
                             }}
@@ -242,9 +245,11 @@ export default function TablaIntegrantes({ onEditar, rol }) {
                       </>
                     )}
 
-                    {(rol === 'superadmin' || rol === 'asistente') && (
+                    {(rol === 'superadmin' || rol === 'asistente' || rol === 'lectura') && (
                       <Tooltip title="Generar ficha PDF">
-                        <FichaIntegrantePDF integrante={row} />
+                        <span onClick={() => registrarHistorial(`Descargó ficha PDF de ${row.nombres}`)}>
+                          <FichaIntegrantePDF integrante={row} />
+                        </span>
                       </Tooltip>
                     )}
                   </Box>
@@ -255,11 +260,7 @@ export default function TablaIntegrantes({ onEditar, rol }) {
         </Table>
       </TableContainer>
 
-      {/* 1️⃣ Confirmación previa de borrado */}
-      <Dialog
-        open={confirmEliminarOpen}
-        onClose={() => setConfirmEliminarOpen(false)}
-      >
+      <Dialog open={confirmEliminarOpen} onClose={() => setConfirmEliminarOpen(false)}>
         <DialogTitle>¿Eliminar integrante?</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -272,7 +273,6 @@ export default function TablaIntegrantes({ onEditar, rol }) {
             color="error"
             onClick={() => {
               setConfirmEliminarOpen(false);
-              // Ahora abre tu diálogo para confirmar con número de documento
               setDialogOpen(true);
             }}
           >
@@ -281,18 +281,17 @@ export default function TablaIntegrantes({ onEditar, rol }) {
         </DialogActions>
       </Dialog>
 
-      {/* 2️⃣ Tu diálogo existente de validación con número */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>Confirmar Eliminación</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Para eliminar a <strong>{integranteAEliminar?.nombres}</strong>, escribe su número de documento:
+            Para eliminar a <strong>{integranteAEliminar?.nombres}</strong>, escribe su número de teléfono:
             <br />
-            <strong>{integranteAEliminar?.docNumero}</strong>
+            <strong>{integranteAEliminar?.telefono}</strong>
           </Typography>
           <TextField
             fullWidth
-            label="Confirma número de documento"
+            label="Confirma número de teléfono"
             value={docConfirmado}
             onChange={e => setDocConfirmado(e.target.value)}
           />

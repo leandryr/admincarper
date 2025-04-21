@@ -34,7 +34,7 @@ export default function Footer() {
             '&:hover': { textDecoration: 'underline' }
           }}
         >
-          RivaDev
+          RivasDev
         </Link>
       </Typography>
 

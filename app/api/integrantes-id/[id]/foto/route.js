@@ -3,6 +3,13 @@ import fs from 'fs';
 import path from 'path';
 import dbConnect from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export async function POST(req, { params }) {
   await dbConnect();
@@ -21,24 +28,36 @@ export async function POST(req, { params }) {
   const filePath = path.join(process.cwd(), 'public', 'uploads', fileName);
   const url = `/uploads/${fileName}`;
 
-  // Buscar el integrante y eliminar la imagen anterior si existe
   const integrante = await Integrante.findById(params.id);
+
   if (integrante?.foto) {
     const oldImagePath = path.join(process.cwd(), 'public', integrante.foto);
     if (fs.existsSync(oldImagePath)) {
-      await unlink(oldImagePath); // elimina la imagen anterior
+      await unlink(oldImagePath);
     }
   }
 
-  // Guardar nueva imagen
   await writeFile(filePath, buffer);
 
-  // Actualizar ruta de imagen en MongoDB
+  // ✅ Subir a Cloudinary
+  let cloudinaryUrl = null;
+  try {
+    const upload = await cloudinary.uploader.upload(filePath, {
+      folder: 'carper/integrantes',
+      public_id: path.parse(fileName).name,
+    });
+    cloudinaryUrl = upload.secure_url;
+  } catch (err) {
+    console.error('Error al subir a Cloudinary:', err);
+  }
+
+  // ✅ Guardar ambas rutas en MongoDB
   await Integrante.findByIdAndUpdate(params.id, {
     foto: url,
+    ...(cloudinaryUrl && { cloudinaryUrl }), // solo si existe
   });
 
-  return new Response(JSON.stringify({ success: true, url }), {
+  return new Response(JSON.stringify({ success: true, url, cloudinaryUrl }), {
     status: 200,
   });
 }

@@ -20,6 +20,7 @@ const integranteSchema = new mongoose.Schema({
   cargo: { type: String, default: '' },
   participacion: { type: String, default: 'NO' },
   foto: { type: String, default: '' },
+  cloudinaryUrl: { type: String, default: '' }, // ✅ agregado
   representantes: [
     {
       nombres: { type: String },

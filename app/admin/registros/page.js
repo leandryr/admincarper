@@ -35,7 +35,8 @@ export default function AdminPage() {
   }, [router]);
 
   const abrirModalEditar = (integrante) => {
-    if (user?.rol === 'superadmin') {
+    // ✅ Ahora superadmin y asistente pueden abrir el modal
+    if (user?.rol === 'superadmin' || user?.rol === 'asistente') {
       setIntegranteAEditar(integrante);
       setModalEditarAbierto(true);
     }
@@ -71,8 +72,8 @@ export default function AdminPage() {
                 {/* 📋 Tabla de integrantes */}
                 <TablaIntegrantes onEditar={abrirModalEditar} rol={user.rol} />
 
-                {/* 🛠 Modal solo si el rol lo permite */}
-                {integranteAEditar && user.rol === 'superadmin' && (
+                {/* 🛠 Modal de edición disponible para superadmin y asistente */}
+                {integranteAEditar && (user.rol === 'superadmin' || user.rol === 'asistente') && (
                   <EditarIntegranteModal
                     open={modalEditarAbierto}
                     onClose={cerrarModalEditar}

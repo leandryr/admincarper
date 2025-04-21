@@ -7,7 +7,12 @@ export async function PUT(req, { params }) {
   const body = await req.json();
 
   try {
-    const actualizado = await Integrante.findByIdAndUpdate(id, body, { new: true });
+    // Nos aseguramos de incluir también cloudinaryUrl si viene en el body
+    const actualizado = await Integrante.findByIdAndUpdate(id, {
+      ...body,
+      ...(body.cloudinaryUrl && { cloudinaryUrl: body.cloudinaryUrl }),
+    }, { new: true });
+
     if (!actualizado) {
       return new Response(JSON.stringify({ error: 'Integrante no encontrado' }), { status: 404 });
     }

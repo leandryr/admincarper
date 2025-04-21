@@ -16,18 +16,15 @@ import {
   CircularProgress
 } from '@mui/material';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import GroupIcon from '@mui/icons-material/Group';
+import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 
 export default function AdminPage() {
   const [stats, setStats] = useState({
     total: 0,
     participantes: 0,
     activos: 0,
-    representantes: 0,
   });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -56,8 +53,7 @@ export default function AdminPage() {
         const total = data.length;
         const participantes = data.filter(i => i.participacion === 'SI').length;
         const activos = data.filter(i => i.status === 'ACTIVO').length;
-        const representantes = data.reduce((acc, i) => acc + (i.representantes?.length || 0), 0);
-        setStats({ total, participantes, activos, representantes });
+        setStats({ total, participantes, activos });
       } catch (err) {
         console.error('Error cargando estadísticas', err);
       } finally {
@@ -81,7 +77,6 @@ export default function AdminPage() {
         <Box flexGrow={1}>
           <HeaderAdmin />
 
-          {/* Este Box escala en xs para “alejar” el contenido */}
           <Box
             sx={{
               p: 4,
@@ -101,6 +96,7 @@ export default function AdminPage() {
                 </Grid>
               ) : (
                 <>
+                  {/* Total Integrantes */}
                   <Grid item xs={12} md={3}>
                     <Box>
                       <Typography variant="h6" gutterBottom>
@@ -115,10 +111,11 @@ export default function AdminPage() {
                     </Box>
                   </Grid>
 
+                  {/* Deportista */}
                   <Grid item xs={12} md={3}>
                     <Box>
                       <Typography variant="h6" gutterBottom>
-                        <GroupIcon /> Participantes
+                        <SportsSoccerIcon /> Deportista
                       </Typography>
                       <Typography variant="h3" fontWeight="bold" color="success.main">
                         {stats.participantes}
@@ -129,6 +126,7 @@ export default function AdminPage() {
                     </Box>
                   </Grid>
 
+                  {/* Activos */}
                   <Grid item xs={12} md={3}>
                     <Box>
                       <Typography variant="h6" gutterBottom>
@@ -142,23 +140,10 @@ export default function AdminPage() {
                       </Typography>
                     </Box>
                   </Grid>
-
-                  <Grid item xs={12} md={3}>
-                    <Box>
-                      <Typography variant="h6" gutterBottom>
-                        <PeopleAltIcon /> Representantes
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold" color="secondary">
-                        {stats.representantes}
-                      </Typography>
-                      <Typography variant="body2">
-                        Registros vinculados por integrante
-                      </Typography>
-                    </Box>
-                  </Grid>
                 </>
               )}
 
+              {/* Instrucciones rápidas */}
               <Grid item xs={12} md={6}>
                 <Box>
                   <Typography variant="h6" gutterBottom>
@@ -178,57 +163,6 @@ export default function AdminPage() {
                       <ListItemText primary="→ Guarda imágenes y crea fichas profesionales." />
                     </ListItem>
                   </List>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    <TipsAndUpdatesIcon /> Próximamente
-                  </Typography>
-                  <List dense>
-                    <ListItem>
-                      <ListItemText
-                        primary="Dashboard del Integrante"
-                        secondary="Visualización de sus propios datos y ficha personal."
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Gráficas interactivas"
-                        secondary="Por edad, sexo, participación y más."
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Sistema de Asistencia"
-                        secondary="Control por código QR o firma digital."
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemText
-                        primary="Exportaciones en lote"
-                        secondary="PDFs y constancias automáticas con firma."
-                      />
-                    </ListItem>
-                  </List>
-                </Box>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Box textAlign="center">
-                  <Typography variant="body1" gutterBottom>
-                    Para seguir personalizando este sistema para tu organización, incluyendo reportes avanzados, accesos externos, constancias y mucho más.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    href="https://www.rivasdev.com/contacto"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Solicitar Desarrollo a Medida
-                  </Button>
                 </Box>
               </Grid>
             </Grid>

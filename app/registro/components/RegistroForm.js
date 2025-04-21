@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState } from 'react';
 import {
   Box,
   TextField,
@@ -9,109 +10,109 @@ import {
   Typography,
   Dialog,
   DialogTitle,
+  DialogContent,
+  DialogContentText,
   DialogActions,
   Snackbar,
-  Alert,
-  IconButton
+  Alert
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import DeleteIcon from '@mui/icons-material/Delete';
 
-export default function RegistroForm({
-  form,
-  setForm,
-  handleChange,
-  guardar,
-  datos,
-  mostrarFormRep,
-  setMostrarFormRep
-}) {
+export default function RegistroForm({ form, setForm, handleChange, guardar }) {
   const [mostrarDialogo, setMostrarDialogo] = useState(false);
-  const [finalizado, setFinalizado] = useState(false);
-  const [representantes, setRepresentantes] = useState([]);
   const [mensaje, setMensaje] = useState('');
   const [mostrarMensaje, setMostrarMensaje] = useState(false);
 
-  useEffect(() => {
-    if (mostrarFormRep && datos?.representantes?.length && representantes.length === 0) {
-      setRepresentantes([]);
+  // errores por campo
+  const [errorPN, setErrorPN] = useState('');
+  const [errorSN, setErrorSN] = useState('');
+  const [errorAP, setErrorAP] = useState('');
+  const [errorAM, setErrorAM] = useState('');
+  const [errorNumSocio, setErrorNumSocio] = useState('');
+  const [errorSexo, setErrorSexo] = useState('');
+  const [errorTelefono, setErrorTelefono] = useState('');
+  const [errorEmail, setErrorEmail] = useState('');
+
+  const mostrarMensajeFn = texto => {
+    setMensaje(texto);
+    setMostrarMensaje(true);
+  };
+
+  const cerrarDialogo = () => setMostrarDialogo(false);
+
+  const handleGuardar = async () => {
+    let valido = true;
+
+    // validar primer nombre
+    if (!form.primerNombre?.trim()) {
+      setErrorPN('Requerido');
+      valido = false;
+    } else {
+      setErrorPN('');
     }
-  }, [mostrarFormRep, datos]);
-
-  const agregarFormulario = () => {
-    if (representantes.length + (datos?.representantes?.length || 0) >= 5) return;
-    setRepresentantes(prev => [
-      ...prev,
-      { nombres: '', apellidos: '', parentesco: '', oficio: '', empresa: '', contacto: '' }
-    ]);
-    setMostrarFormRep(true);
-  };
-
-  const eliminarFormulario = index => {
-    setRepresentantes(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleRepChange = (index, e) => {
-    const { name, value } = e.target;
-    setRepresentantes(prev =>
-      prev.map((rep, i) => (i === index ? { ...rep, [name]: value } : rep))
-    );
-  };
-
-  const guardarTodosRepresentantes = async () => {
-    try {
-      const res = await fetch(`/api/integrantes/${form.docNumero}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ representantes })
-      });
-
-      if (res.ok) {
-        setMensaje('Todos los representantes han sido guardados correctamente ✅');
-        setMostrarMensaje(true);
-        setRepresentantes([]);
-        setFinalizado(true);
-        setMostrarFormRep(false);
-        setTimeout(() => location.reload(), 2500);
-      } else {
-        const err = await res.json();
-        setMensaje(err.error || 'Error al guardar representantes ❌');
-        setMostrarMensaje(true);
-      }
-    } catch {
-      setMensaje('Error del servidor');
-      setMostrarMensaje(true);
+    // validar segundo nombre
+    if (!form.segundoNombre?.trim()) {
+      setErrorSN('Requerido');
+      valido = false;
+    } else {
+      setErrorSN('');
     }
-  };
-
-  const handleEditRep = (index, field, value) => {
-    setForm(prev => {
-      const actuales = [...(prev.representantes || [])];
-      actuales[index] = { ...actuales[index], [field]: value };
-      return { ...prev, representantes: actuales };
-    });
-  };
-
-  const guardarEdicion = async (index, repEdit) => {
-    try {
-      const res = await fetch(`/api/integrantes/${form.docNumero}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ index, representanteEditado: repEdit })
-      });
-
-      if (res.ok) {
-        setMensaje(`Representante #${index + 1} actualizado correctamente ✅`);
-        setMostrarMensaje(true);
-      } else {
-        const err = await res.json();
-        setMensaje(err.error || 'Error al guardar representante ❌');
-        setMostrarMensaje(true);
-      }
-    } catch {
-      setMensaje('Error del servidor');
-      setMostrarMensaje(true);
+    // validar apellido paterno
+    if (!form.apPaterno?.trim()) {
+      setErrorAP('Requerido');
+      valido = false;
+    } else {
+      setErrorAP('');
     }
+    // validar apellido materno
+    if (!form.apMaterno?.trim()) {
+      setErrorAM('Requerido');
+      valido = false;
+    } else {
+      setErrorAM('');
+    }
+    // validar sexo
+    if (!form.sexo) {
+      setErrorSexo('Requerido');
+      valido = false;
+    } else {
+      setErrorSexo('');
+    }
+    // validar teléfono peruano de 9 dígitos
+    if (!/^\d{9}$/.test(form.telefono || '')) {
+      setErrorTelefono('Debe tener 9 dígitos');
+      valido = false;
+    } else {
+      setErrorTelefono('');
+    }
+    // validar email con @ y .com
+    if (!/.+@.+\.com$/.test(form.email || '')) {
+      setErrorEmail('Debe contener "@" y terminar en ".com"');
+      valido = false;
+    } else {
+      setErrorEmail('');
+    }
+
+    if (!valido) return;
+
+    // si año queda vacío, asignar '1900' por defecto
+    if (!form.fechaNacimiento?.anio) {
+      setForm(prev => ({
+        ...prev,
+        fechaNacimiento: { 
+          ...prev.fechaNacimiento,
+          anio: '1900'
+        }
+      }));
+      // además sincronizar localmente para la llamada guardar
+      form.fechaNacimiento = {
+        ...form.fechaNacimiento,
+        anio: '1900'
+      };
+    }
+
+    await guardar();
+    mostrarMensajeFn(form.guardado ? 'Actualización exitosa ✅' : 'Registro exitoso ✅');
+    setMostrarDialogo(true);
   };
 
   return (
@@ -120,144 +121,158 @@ export default function RegistroForm({
         <Typography variant="h6" fontWeight="bold" color="primary">
           Datos del Integrante
         </Typography>
-        <TextField label="Primer Nombre" name="primerNombre" value={form.primerNombre} onChange={handleChange} fullWidth />
-        <TextField label="Segundo Nombre" name="segundoNombre" value={form.segundoNombre} onChange={handleChange} fullWidth />
-        <TextField label="Apellido Paterno" name="apPaterno" value={form.apPaterno} onChange={handleChange} fullWidth />
-        <TextField label="Apellido Materno" name="apMaterno" value={form.apMaterno} onChange={handleChange} fullWidth />
-        <TextField label="Número de Socio" name="numeroSocio" value={form.numeroSocio} onChange={handleChange} fullWidth />
-        <TextField select label="Sexo" name="sexo" value={form.sexo} onChange={handleChange} fullWidth>
+        <TextField
+          label="Primer Nombre"
+          name="primerNombre"
+          value={form.primerNombre}
+          onChange={handleChange}
+          error={!!errorPN}
+          helperText={errorPN}
+          fullWidth
+        />
+        <TextField
+          label="Segundo Nombre"
+          name="segundoNombre"
+          value={form.segundoNombre}
+          onChange={handleChange}
+          error={!!errorSN}
+          helperText={errorSN}
+          fullWidth
+        />
+        <TextField
+          label="Apellido Paterno"
+          name="apPaterno"
+          value={form.apPaterno}
+          onChange={handleChange}
+          error={!!errorAP}
+          helperText={errorAP}
+          fullWidth
+        />
+        <TextField
+          label="Apellido Materno"
+          name="apMaterno"
+          value={form.apMaterno}
+          onChange={handleChange}
+          error={!!errorAM}
+          helperText={errorAM}
+          fullWidth
+        />
+        <TextField
+          label="Número de Socio"
+          name="numeroSocio"
+          value={form.numeroSocio}
+          onChange={handleChange}
+          error={!!errorNumSocio}
+          helperText={errorNumSocio}
+          fullWidth
+        />
+        <TextField
+          select
+          label="Sexo"
+          name="sexo"
+          value={form.sexo}
+          onChange={handleChange}
+          error={!!errorSexo}
+          helperText={errorSexo}
+          fullWidth
+        >
           <MenuItem value="M">Masculino</MenuItem>
           <MenuItem value="F">Femenino</MenuItem>
         </TextField>
-        <TextField label="Teléfono" name="telefono" value={form.telefono} onChange={handleChange} fullWidth />
-        <TextField label="Email" name="email" value={form.email} onChange={handleChange} fullWidth />
+        <TextField
+          label="Teléfono"
+          name="telefono"
+          value={form.telefono}
+          onChange={handleChange}
+          error={!!errorTelefono}
+          helperText={errorTelefono}
+          fullWidth
+        />
+        <TextField
+          label="Email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          error={!!errorEmail}
+          helperText={errorEmail}
+          fullWidth
+        />
         <Box display="flex" gap={2}>
-          <TextField label="Día" name="dia" value={form.fechaNacimiento?.dia || ''} onChange={handleChange} fullWidth />
-          <TextField label="Mes" name="mes" value={form.fechaNacimiento?.mes || ''} onChange={handleChange} fullWidth />
-          <TextField label="Año" name="anio" value={form.fechaNacimiento?.anio || ''} onChange={handleChange} fullWidth />
+          <TextField
+            select
+            label="Día"
+            name="dia"
+            value={form.fechaNacimiento?.dia || ''}
+            onChange={handleChange}
+            fullWidth
+          >
+            {[...Array(31)].map((_, i) => {
+              const val = String(i + 1).padStart(2, '0');
+              return <MenuItem key={val} value={val}>{val}</MenuItem>;
+            })}
+          </TextField>
+          <TextField
+            select
+            label="Mes"
+            name="mes"
+            value={form.fechaNacimiento?.mes || ''}
+            onChange={handleChange}
+            fullWidth
+          >
+            {[...Array(12)].map((_, i) => {
+              const val = String(i + 1).padStart(2, '0');
+              return <MenuItem key={val} value={val}>{val}</MenuItem>;
+            })}
+          </TextField>
         </Box>
+        {/* Año opcional */}
+        <TextField
+          label="Año (Opcional)"
+          name="anio"
+          value={form.fechaNacimiento?.anio || ''}
+          onChange={handleChange}
+          fullWidth
+        />
         <Button
           variant="contained"
           fullWidth
           color="success"
-          onClick={() => {
-            guardar();
-            if (!datos) setTimeout(() => setMostrarDialogo(true), 1000);
-          }}
+          onClick={handleGuardar}
         >
-          {form.guardado ? 'Actualizado' : datos ? 'Actualizar' : 'Registrar'}
+          {form.guardado ? 'Actualizar' : 'Registrar'}
         </Button>
       </Box>
 
-      {/* Agregar nuevos representantes */}
-      {datos?.representantes?.length === 0 && !mostrarFormRep && (
-        <Box mt={4}>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Este integrante aún no tiene representantes registrados.
-          </Alert>
-          <Button variant="outlined" color="primary" onClick={agregarFormulario}>
-            Agregar Representante
-          </Button>
-        </Box>
-      )}
-
-      {/* Botón para agregar más si ya hay algunos */}
-      {datos?.representantes?.length > 0 && representantes.length === 0 && datos.representantes.length < 5 && (
-        <Box mt={2}>
-          <Button variant="outlined" color="primary" onClick={agregarFormulario}>
-            Agregar Otro Representante #{datos.representantes.length + 1}
-          </Button>
-        </Box>
-      )}
-
-      {/* Lista de representantes existentes con edición */}
-      {datos?.representantes?.length > 0 && (
-        <Box mt={4}>
-          <Typography variant="h6" fontWeight="bold" color="primary" mb={2}>
-            Representantes Registrados
-          </Typography>
-          {datos.representantes.map((rep, idx) => (
-            <Box key={idx} sx={{ border: '1px solid #ccc', p: 2, borderRadius: 2, mb: 2 }}>
-              <Typography fontWeight="bold" color="secondary">Representante #{idx + 1}</Typography>
-              {['nombres','apellidos','parentesco','oficio','empresa','contacto'].map(field => (
-                <TextField
-                  key={field}
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={rep[field]}
-                  onChange={e => handleEditRep(idx, field, e.target.value)}
-                  fullWidth
-                  sx={{ mt: 1 }}
-                />
-              ))}
-              <Box display="flex" justifyContent="flex-end" mt={2}>
-                <Button color="success" variant="contained" onClick={() => guardarEdicion(idx, (form.representantes || [])[idx])}>
-                  Guardar Cambios
-                </Button>
-              </Box>
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      {/* Formularios nuevos de representantes */}
-      {mostrarFormRep && representantes.map((rep, idx) => (
-        <Box key={idx} mt={4} sx={{ border: '1px solid #ccc', p: 2, borderRadius: 2 }} display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold" color="secondary">
-              Representante #{(datos?.representantes?.length || 0) + idx + 1}
-            </Typography>
-            <IconButton color="error" onClick={() => eliminarFormulario(idx)}>
-              <DeleteIcon />
-            </IconButton>
-          </Box>
-          {['nombres','apellidos','parentesco','oficio','empresa','contacto'].map(field => (
-            <TextField
-              key={field}
-              label={field.charAt(0).toUpperCase() + field.slice(1)}
-              name={field}
-              value={rep[field]}
-              onChange={e => handleRepChange(idx, e)}
-              fullWidth
-            />
-          ))}
-        </Box>
-      ))}
-
-      {/* Botones para guardar todos los nuevos */}
-      {mostrarFormRep && representantes.length > 0 && (
-        <Box mt={3} display="flex" flexDirection="column" gap={2}>
-          {representantes.length + (datos?.representantes?.length || 0) < 5 && (
-            <Button variant="outlined" color="primary" onClick={agregarFormulario}>
-              Agregar Otro Representante #{representantes.length + (datos?.representantes?.length || 0) + 1}
-            </Button>
-          )}
-          <Button variant="contained" color="success" onClick={guardarTodosRepresentantes}>
-            Registrar Todos los Representantes
-          </Button>
-        </Box>
-      )}
-
-      {/* Confirmación tras registrar nuevo */}
-      <Dialog open={mostrarDialogo} onClose={() => setMostrarDialogo(false)}>
-        <DialogTitle>¿Deseas agregar un representante o familiar?</DialogTitle>
+      <Dialog open={mostrarDialogo} onClose={cerrarDialogo}>
+        <DialogTitle>
+          {form.guardado ? 'Registro actualizado' : 'Registro completado'}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Deseas agregar otro integrante?
+          </DialogContentText>
+        </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setMostrarDialogo(false); setFinalizado(true); location.reload(); }} color="error">
-            No, finalizar
+          <Button onClick={() => location.reload()} color="primary">
+            Sí
           </Button>
-          <Button onClick={() => { setMostrarDialogo(false); agregarFormulario(); }} color="primary">
-            Sí, agregar
+          <Button onClick={() => location.reload()} color="error">
+            No
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Mensaje emergente */}
       <Snackbar
         open={mostrarMensaje}
         autoHideDuration={3000}
         onClose={() => setMostrarMensaje(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={() => setMostrarMensaje(false)} severity="success" sx={{ width: '100%' }}>
+        <Alert
+          onClose={() => setMostrarMensaje(false)}
+          severity="success"
+          sx={{ width: '100%' }}
+        >
           {mensaje}
         </Alert>
       </Snackbar>

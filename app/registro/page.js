@@ -36,21 +36,24 @@ export default function RegistroPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navItems = [
-    { label: 'Inicio', href: '/' },
-    { label: 'Noticias', href: '/' },
-    { label: 'Empadronamiento', href: '/registro' },
-    { label: 'Contacto', href: '/' },
-  ];
-  const loginItems = [
-    { label: 'Administrador', href: '/admin/login' },
-    { label: 'Socio', href: '#' },
-    { label: 'Integrante', href: '#' },
-    { label: 'Organizador', href: '#' },
-  ];
-  const toggleDrawer = () => setMobileOpen(!mobileOpen);
+  const [form, setForm] = useState(null);
+  const [tipoDoc, setTipoDoc] = useState('DNI');
+  const [docNumero, setDocNumero] = useState('');
+  const [datos, setDatos] = useState(null);
+  const [mensaje, setMensaje] = useState('');
+  const [mensajeTipo, setMensajeTipo] = useState('');
+  const [mostrarRepresentante, setMostrarRepresentante] = useState(false);
+  const [bloquearBusqueda, setBloquearBusqueda] = useState(false);
+  const [requiereValidacion, setRequiereValidacion] = useState(false);
+  const [validado, setValidado] = useState(false);
+  const [intentosRestantes, setIntentosRestantes] = useState(5);
+  const [respuesta, setRespuesta] = useState('');
+  const [errorValidacion, setErrorValidacion] = useState('');
 
-  // Drawer para móvil
+  const toggleDrawer = () => setMobileOpen(!mobileOpen);
+  const navItems = [{ label: 'Inicio', href: '/' }];
+  const loginItems = [{ label: 'Admin', href: '/admin/login' }];
+
   const drawer = (
     <Box onClick={toggleDrawer} sx={{ width: 240 }}>
       <List>
@@ -75,50 +78,33 @@ export default function RegistroPage() {
     </Box>
   );
 
-  // Estado formulario
-  const [form, setForm] = useState(null);
-  const [tipoDoc, setTipoDoc] = useState('DNI');
-  const [docNumero, setDocNumero] = useState('');
-  const [datos, setDatos] = useState(null);
-  const [mensaje, setMensaje] = useState('');
-  const [mensajeTipo, setMensajeTipo] = useState('');
-  const [mostrarRepresentante, setMostrarRepresentante] = useState(false);
-  const [bloquearBusqueda, setBloquearBusqueda] = useState(false);
-  const [requiereValidacion, setRequiereValidacion] = useState(false);
-  const [validado, setValidado] = useState(false);
-  const [intentosRestantes, setIntentosRestantes] = useState(5);
-  const [seguridad, setSeguridad] = useState({ numeroSocio: '', captcha: '' });
-  const [num1, setNum1] = useState(Math.floor(Math.random() * 10));
-  const [num2, setNum2] = useState(Math.floor(Math.random() * 10));
-  const captchaRespuesta = (num1 + num2).toString();
-
   const mostrarMensajeFn = (texto, tipo = 'ok') => {
     setMensaje(texto);
     setMensajeTipo(tipo);
     setTimeout(() => setMensaje(''), 4000);
   };
 
-  // Buscamos un integrante
+  // Paso 1: buscar
   const buscar = async () => {
-    if (!docNumero.trim())
-      return mostrarMensajeFn('Debe ingresar un número de identificación', 'error');
-    if (tipoDoc === 'DNI' && !/^\d{8}$/.test(docNumero))
-      return mostrarMensajeFn('El DNI debe tener exactamente 8 dígitos', 'error');
-
+    if (!docNumero.trim()) {
+      mostrarMensajeFn('Debe ingresar un número de identificación', 'error');
+      return;
+    }
+    if (tipoDoc === 'DNI' && !/^\d{8}$/.test(docNumero)) {
+      mostrarMensajeFn('El DNI debe tener exactamente 8 dígitos', 'error');
+      return;
+    }
     try {
       const res = await fetch(`/api/integrantes/${docNumero}?tipoDoc=${tipoDoc}`);
       if (res.ok) {
         const data = await res.json();
         const [primerNombre, ...resto] = data.nombres?.split(' ') || [''];
-        const segundoNombre = resto.join(' ');
         setDatos(data);
-        setForm({ ...data, primerNombre, segundoNombre, guardado: true });
-        setMostrarRepresentante(false);
+        setForm({ ...data, primerNombre, segundoNombre: resto.join(' '), guardado: true });
         setBloquearBusqueda(true);
         setRequiereValidacion(true);
         mostrarMensajeFn('Registro encontrado. Verifica tus datos para continuar.');
       } else {
-        // un nuevo registro
         setDatos(null);
         setForm({
           tipoDoc,
@@ -131,11 +117,11 @@ export default function RegistroPage() {
           telefono: '',
           email: '',
           numeroSocio: '',
-          fechaNacimiento: { dia: '', mes: '', anio: '1900' },
+          fechaNacimiento: { dia: '', mes: '', anio: '' },
           guardado: false,
         });
-        setMostrarRepresentante(true);
         setBloquearBusqueda(true);
+        setMostrarRepresentante(true);
         mostrarMensajeFn('Documento no encontrado. Completa el formulario para registrarte.');
       }
     } catch {
@@ -143,50 +129,39 @@ export default function RegistroPage() {
     }
   };
 
-  // Validamos la seguridad
+  // Paso 2: validar últimos 4 dígitos
   const validarSeguridad = () => {
-    if (
-      seguridad.numeroSocio !== datos.numeroSocio ||
-      seguridad.captcha !== captchaRespuesta
-    ) {
-      const nuevoIntento = intentosRestantes - 1;
-      setIntentosRestantes(nuevoIntento);
-      mostrarMensajeFn(`Datos inválidos. Intentos restantes: ${nuevoIntento}`, 'error');
-      return;
-    }
-    setValidado(true);
-    mostrarMensajeFn('Validación correcta ✅');
-  };
-
-  const reiniciarPregunta = () => {
-    setNum1(Math.floor(Math.random() * 10));
-    setNum2(Math.floor(Math.random() * 10));
-    setSeguridad({ ...seguridad, captcha: '' });
-  };
-
-  // Cambios en el formato
-  const handleChange = e => {
-    const { name, value } = e.target;
-    if (['dia', 'mes', 'anio'].includes(name)) {
-      setForm(prev => ({
-        ...prev,
-        fechaNacimiento: { ...prev.fechaNacimiento, [name]: value },
-      }));
+    if (intentosRestantes <= 0) return;
+    const ultimos4 = datos?.telefono?.slice(-4);
+    if (respuesta.trim() === ultimos4) {
+      setValidado(true);
+      mostrarMensajeFn('Validación correcta ✅');
     } else {
-      setForm(prev => ({ ...prev, [name]: value }));
+      const restantes = intentosRestantes - 1;
+      setIntentosRestantes(restantes);
+      setErrorValidacion(`❌ Validación incorrecta. Intentos restantes: ${restantes}`);
     }
   };
 
-  // Guardar integrante
+  // Reiniciar todo el flujo
+  const reiniciarBusqueda = () => {
+    setDocNumero('');
+    setDatos(null);
+    setForm(null);
+    setRespuesta('');
+    setErrorValidacion('');
+    setIntentosRestantes(5);
+    setBloquearBusqueda(false);
+    setRequiereValidacion(false);
+    setValidado(false);
+    setMostrarRepresentante(false);
+    setMensaje('');
+    setMensajeTipo('');
+  };
+
+  // Paso 3: guardar
   const guardar = async () => {
-    if (
-      !form?.primerNombre ||
-      !form?.apPaterno ||
-      !form?.fechaNacimiento?.dia ||
-      !form?.fechaNacimiento?.mes
-    ) {
-      return mostrarMensajeFn('Completa todos los campos requeridos', 'error');
-    }
+    // asumimos validado ya
     try {
       const metodo = datos ? 'PUT' : 'POST';
       const payload = {
@@ -201,7 +176,6 @@ export default function RegistroPage() {
       if (res.ok) {
         mostrarMensajeFn('Datos guardados correctamente ✅');
         setForm(prev => ({ ...prev, guardado: true }));
-        if (!datos) setTimeout(() => setMostrarRepresentante(true), 1200);
       } else {
         const err = await res.json();
         mostrarMensajeFn(err.error || 'Error al guardar datos', 'error');
@@ -211,24 +185,16 @@ export default function RegistroPage() {
     }
   };
 
-  // Guardar representante
-  const guardarRepresentanteEnIntegrante = async nuevoRep => {
-    try {
-      const res = await fetch(`/api/integrantes/${form.docNumero}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nuevoRepresentante: nuevoRep }),
-      });
-      if (res.ok) {
-        const actual = await res.json();
-        // actual.representantes recordar esto
-        mostrarMensajeFn('Representante agregado correctamente ✅');
-      } else {
-        const err = await res.json();
-        mostrarMensajeFn(err.error || 'Error al agregar representante', 'error');
-      }
-    } catch {
-      mostrarMensajeFn('Error del servidor', 'error');
+  // Manejador cambios
+  const handleChange = e => {
+    const { name, value } = e.target;
+    if (name === 'dia' || name === 'mes' || name === 'anio') {
+      setForm(prev => ({
+        ...prev,
+        fechaNacimiento: { ...prev.fechaNacimiento, [name]: value },
+      }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -236,7 +202,6 @@ export default function RegistroPage() {
     <Box display="flex" flexDirection="column" minHeight="100vh" sx={{ bgcolor: '#fff' }}>
       <CssBaseline />
 
-      {/* Navbar / Drawer */}
       <AppBar
         position="fixed"
         color="transparent"
@@ -250,26 +215,15 @@ export default function RegistroPage() {
             </IconButton>
           ) : (
             <Box sx={{ width: 36, height: 36, mr: 2, position: 'relative' }}>
-              <Image src="/logo-carper.png" alt="Logo" fill style={{ objectFit: 'contain' }} />
+              <Image src="/logo-carper.png" alt="Logo CARPER" fill style={{ objectFit: 'contain' }} />
             </Box>
           )}
-          <Typography variant="h6" sx={{ color: '#2e7d32', fontWeight: 'bold', flexGrow: 1 }}>
+          <Typography variant="h6" sx={{ flexGrow: 1, color: '#2e7d32', fontWeight: 'bold' }}>
             Registro CARPER
           </Typography>
-          {!isMobile &&
-            navItems.map(item => (
-              <Button
-                key={item.label}
-                component={Link}
-                href={item.href}
-                sx={{ color: '#2e7d32', textTransform: 'none', mx: 0.5 }}
-              >
-                {item.label}
-              </Button>
-            ))}
           {!isMobile && (
-            <Button component={Link} href="/admin/login" sx={{ color: '#2e7d32', ml: 2 }}>
-              Ingresar
+            <Button component={Link} href="/admin/login" sx={{ color: '#2e7d32' }}>
+              Ingresar Admin
             </Button>
           )}
         </Toolbar>
@@ -281,16 +235,24 @@ export default function RegistroPage() {
         </Drawer>
       )}
 
-      {/* Contenido */}
-      <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto', pt: { xs: 8, md: 10 }, flex: 1 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box sx={{ width: '100%', maxWidth: 900, mx: 'auto', pt: { xs: 10, md: 12 }, flex: 1 }}>
+        <Typography
+          variant={isMobile ? 'h6' : 'h5'}
+          align="center"
+          sx={{ mb: 3, px: { xs: 2, md: 0 }, lineHeight: 1.4 }}
+        >
+          Ingresa tu tipo de documento y número,
+          <br />
+          si no estás registrado, actualízalo.
+        </Typography>
 
+        <Box display="flex" justifyContent="flex-end" mb={2}>
           {bloquearBusqueda && (
             <Tooltip title="Limpiar y registrar otro">
               <Button
                 variant="outlined"
                 startIcon={<RestartAltIcon />}
-                onClick={() => location.reload()}
+                onClick={reiniciarBusqueda}
               >
                 Reiniciar
               </Button>
@@ -312,48 +274,44 @@ export default function RegistroPage() {
         {datos && requiereValidacion && !validado && intentosRestantes > 0 && (
           <Paper elevation={3} sx={{ p: 3, mt: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Verificación de Seguridad
+              Validación de Seguridad
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Ingresa los últimos 4 dígitos de tu teléfono registrado.
             </Typography>
             <TextField
-              label="Número de Socio"
-              value={seguridad.numeroSocio}
-              onChange={e => setSeguridad({ ...seguridad, numeroSocio: e.target.value })}
+              label="Últimos 4 dígitos"
               fullWidth
+              value={respuesta}
+              onChange={e => {
+                setRespuesta(e.target.value);
+                setErrorValidacion('');
+              }}
               sx={{ mb: 2 }}
             />
-            <Box display="flex" gap={2} mb={2}>
-              <TextField
-                label={`¿Cuánto es ${num1} + ${num2}?`}
-                value={seguridad.captcha}
-                onChange={e => setSeguridad({ ...seguridad, captcha: e.target.value })}
-                fullWidth
-              />
-              <Button onClick={reiniciarPregunta} variant="outlined">
-                Cambiar
-              </Button>
-            </Box>
-            <Button variant="contained" onClick={validarSeguridad}>
-              Validar
+            {errorValidacion && <Alert severity="error" sx={{ mb: 2 }}>{errorValidacion}</Alert>}
+            <Button
+              variant="contained"
+              onClick={validarSeguridad}
+              disabled={intentosRestantes <= 0}
+            >
+              Validar Identidad
             </Button>
           </Paper>
         )}
 
         {datos && !validado && intentosRestantes === 0 && (
           <Alert severity="error" sx={{ mt: 3 }}>
-            Has superado los intentos permitidos.
+            🚫 Has superado los intentos permitidos. Usa "Reiniciar".
           </Alert>
         )}
 
-        {form && (!datos || validado) && (
+        {form && (validado || mostrarRepresentante) && (
           <RegistroForm
             form={form}
-            setForm={setForm} 
+            setForm={setForm}
             handleChange={handleChange}
             guardar={guardar}
-            datos={datos}
-            mostrarFormRep={mostrarRepresentante}
-            setMostrarFormRep={setMostrarRepresentante}
-            guardarRepresentante={guardarRepresentanteEnIntegrante}
           />
         )}
       </Box>

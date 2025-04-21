@@ -1,6 +1,8 @@
 import dbConnect from '@/lib/mongodb';
 import { Usuario } from '@/models/Usuario';
 import bcryptjs from 'bcryptjs';
+import { registrarHistorial } from '@/lib/registrarHistorial';
+import { cookies } from 'next/headers';
 
 export async function GET() {
   await dbConnect();
@@ -35,6 +37,24 @@ export async function POST(req) {
     });
 
     const guardado = await nuevo.save();
+
+    // Obtener usuario actual desde cookie (admin)
+    const cookie = cookies().get('admin')?.value;
+    if (cookie) {
+      try {
+        const user = JSON.parse(decodeURIComponent(cookie));
+        if (user?._id) {
+          await registrarHistorial({
+            req,
+            userId: user._id,
+            accion: `Registró un nuevo usuario: ${body.nombre} ${body.apellido}`,
+          });
+        }
+      } catch (err) {
+        console.error('Error leyendo cookie de usuario para historial:', err);
+      }
+    }
+
     return new Response(JSON.stringify(guardado), { status: 201 });
 
   } catch (error) {

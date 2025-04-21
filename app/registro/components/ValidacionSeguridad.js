@@ -10,13 +10,13 @@ import {
 } from '@mui/material';
 
 export default function ValidacionSeguridad({ datos, onValidado }) {
-  const [numeroSocio, setNumeroSocio] = useState('');
   const [respuesta, setRespuesta] = useState('');
   const [error, setError] = useState('');
   const [intentos, setIntentos] = useState(0);
 
-  const pregunta = '¿Cuánto es 3 + 2?';
-  const respuestaCorrecta = '5';
+  // Extraemos los últimos 4 dígitos del teléfono en BD
+  const telefono = datos?.telefono || '';
+  const ultimos4 = telefono.slice(-4);
 
   const validar = () => {
     if (intentos >= 5) {
@@ -24,11 +24,8 @@ export default function ValidacionSeguridad({ datos, onValidado }) {
       return;
     }
 
-    if (
-      numeroSocio === datos.numeroSocio &&
-      respuesta.trim() === respuestaCorrecta
-    ) {
-      onValidado(); 
+    if (respuesta.trim() === ultimos4) {
+      onValidado();
     } else {
       const restantes = 4 - intentos;
       setIntentos(prev => prev + 1);
@@ -42,19 +39,18 @@ export default function ValidacionSeguridad({ datos, onValidado }) {
         Validación de Seguridad
       </Typography>
 
-      <TextField
-        label="Número de Socio"
-        fullWidth
-        value={numeroSocio}
-        onChange={(e) => setNumeroSocio(e.target.value)}
-        sx={{ my: 1 }}
-      />
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Ingresa los últimos 4 dígitos de tu número de teléfono registrado.
+      </Typography>
 
       <TextField
-        label={pregunta}
+        label="Últimos 4 dígitos"
         fullWidth
         value={respuesta}
-        onChange={(e) => setRespuesta(e.target.value)}
+        onChange={(e) => {
+          setRespuesta(e.target.value);
+          setError('');
+        }}
         sx={{ my: 1 }}
       />
 

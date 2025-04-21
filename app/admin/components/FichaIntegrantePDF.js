@@ -1,7 +1,7 @@
 'use client';
 
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable'; // ✅ Importación correcta
+import autoTable from 'jspdf-autotable';
 import { Button, Tooltip } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
@@ -24,12 +24,13 @@ export default function FichaIntegrantePDF({ integrante }) {
       doc.setFontSize(12);
       doc.setTextColor(0, 0, 0);
 
+      // Tabla de datos del integrante
       const datos = [
         ['Código', integrante.codigo],
         ['Nombres', integrante.nombres],
         ['Apellido Paterno', integrante.apPaterno],
         ['Apellido Materno', integrante.apMaterno],
-        ['Sexo', integrante.sexo],
+        ['Sexo', integrante.sexo === 'M' ? 'Masculino' : 'Femenino'],
         ['Número de Socio', integrante.numeroSocio],
         ['Tipo Documento', integrante.tipoDoc],
         ['Número Documento', integrante.docNumero],
@@ -37,11 +38,9 @@ export default function FichaIntegrantePDF({ integrante }) {
         ['Teléfono', integrante.telefono],
         ['Email', integrante.email],
         ['Status', integrante.status],
-        ['Cargo', integrante.cargo || 'No registrado'],
-        ['Participación', integrante.participacion],
+        ['Deportista', integrante.participacion],
       ];
 
-      // ✅ Aquí se usa la función autoTable correctamente
       autoTable(doc, {
         startY: 40,
         head: [['Campo', 'Valor']],
@@ -54,10 +53,11 @@ export default function FichaIntegrantePDF({ integrante }) {
         },
       });
 
-      // Foto (si existe)
-      if (integrante.foto) {
+      // Mostrar imagen desde Cloudinary si está disponible
+      if (integrante.cloudinaryUrl) {
         const foto = new Image();
-        foto.src = integrante.foto;
+        foto.crossOrigin = 'anonymous';
+        foto.src = integrante.cloudinaryUrl;
         foto.onload = () => {
           doc.addImage(foto, 'JPEG', 160, 10, 20, 20);
           doc.save(`Ficha_${integrante.codigo}.pdf`);

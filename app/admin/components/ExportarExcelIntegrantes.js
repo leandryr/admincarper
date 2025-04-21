@@ -34,7 +34,7 @@ export default function ExportarExcelIntegrantes() {
       const encabezado = [
         'Código', 'AP PATERNO', 'AP MATERNO', 'NOMBRES', 'SEXO',
         'NUMERO DE SOCIO', 'TIPO_DOC', 'DOC_NUMERO', 'FECHA_NAC',
-        'TELEFONO', 'EMAIL', 'STATUS', 'CARGO', 'PARTICIPACION', 'FOTO'
+        'TELEFONO', 'EMAIL', 'STATUS', 'CARGO', 'PARTICIPACION', 'FOTO (Cloudinary)'
       ];
 
       const filas = data.map(i => [
@@ -52,7 +52,7 @@ export default function ExportarExcelIntegrantes() {
         i.status,
         i.cargo,
         i.participacion,
-        'NO DISPONIBLE' // ❌ Imagen no soportada
+        i.cloudinaryUrl || 'NO DISPONIBLE' // ✅ Usar Cloudinary
       ]);
 
       const contenidoCSV = [encabezado, ...filas]

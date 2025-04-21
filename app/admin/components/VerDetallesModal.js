@@ -3,6 +3,8 @@
 import { Box, Typography, Modal, Table, TableBody, TableCell, TableRow, Avatar } from '@mui/material';
 
 export default function VerDetallesModal({ open, onClose, integrante }) {
+  const imagen = integrante.cloudinaryUrl || ''; // ✅ Mostrar solo cloudinaryUrl
+
   return (
     <Modal open={open} onClose={onClose}>
       <Box
@@ -11,9 +13,7 @@ export default function VerDetallesModal({ open, onClose, integrante }) {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          // Responsive: 90% de ancho en xs, fijo 700px en sm+
           width: { xs: '90%', sm: 700 },
-          // Altura máxima con scroll en móvil
           maxHeight: { xs: '90vh', sm: 'auto' },
           overflowY: { xs: 'auto', sm: 'visible' },
           bgcolor: 'background.paper',
@@ -24,9 +24,9 @@ export default function VerDetallesModal({ open, onClose, integrante }) {
       >
         {/* Foto centrada */}
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-          {integrante.foto ? (
+          {imagen ? (
             <Avatar
-              src={integrante.foto}
+              src={imagen}
               alt="Foto"
               sx={{ width: 120, height: 120, border: '2px solid #ccc' }}
             />

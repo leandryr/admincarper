@@ -24,7 +24,7 @@ export async function GET() {
   const encabezado = [
     'Código', 'AP PATERNO', 'AP MATERNO', 'NOMBRES', 'SEXO',
     'NUMERO DE SOCIO', 'TIPO_DOC', 'DOC_NUMERO', 'FECHA_NAC',
-    'TELEFONO', 'EMAIL', 'STATUS', 'CARGO', 'PARTICIPACION', 'FOTO'
+    'TELEFONO', 'EMAIL', 'STATUS', 'CARGO', 'DEPORTISTA', 'FOTO'
   ];
   sheet.addRow(encabezado);
 
