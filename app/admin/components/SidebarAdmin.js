@@ -26,6 +26,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import BuildIcon from '@mui/icons-material/Build'; // 🛠️ icono para mantenimiento
 
 const drawerWidth = 220;
 
@@ -36,7 +37,6 @@ export default function SidebarAdmin() {
   const [cargando, setCargando] = useState(true);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
-  // Carga usuario y rol
   useEffect(() => {
     (async () => {
       try {
@@ -53,7 +53,6 @@ export default function SidebarAdmin() {
     })();
   }, [router]);
 
-  // Función actualizada de cierre de sesión
   const cerrarSesion = async () => {
     try {
       await fetch('/api/logout', { method: 'POST' });
@@ -64,7 +63,6 @@ export default function SidebarAdmin() {
     router.push('/admin/login');
   };
 
-  // 🕒 Cierre automático tras 5 minutos de inactividad
   useEffect(() => {
     let timeout;
 
@@ -72,7 +70,7 @@ export default function SidebarAdmin() {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         cerrarSesion();
-      }, 5 * 60 * 1000); // 5 minutos
+      }, 5 * 60 * 1000);
     };
 
     const eventos = ['mousemove', 'keydown', 'click', 'scroll'];
@@ -199,6 +197,12 @@ export default function SidebarAdmin() {
                   <ListItemButton onClick={() => router.push('/admin/historial')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
                     <HistoryIcon sx={{ mr: 1 }} />
                     <ListItemText primary="Historial" />
+                  </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => router.push('/admin/mantenimiento')} sx={{ px: 3, '&:hover': { bgcolor: '#fff3e0', color: '#f57f17' } }}>
+                    <BuildIcon sx={{ mr: 1 }} />
+                    <ListItemText primary="Mantenimiento" />
                   </ListItemButton>
                 </ListItem>
               </>

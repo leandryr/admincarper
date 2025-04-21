@@ -30,34 +30,46 @@ export async function POST(req, { params }) {
 
   const integrante = await Integrante.findById(params.id);
 
-  if (integrante?.foto) {
+  // ✅ Detecta si estamos en Vercel (producción) o local
+  const esProduccion = process.env.VERCEL === '1';
+
+  // 🔁 Solo elimina archivo local si NO estamos en producción
+  if (!esProduccion && integrante?.foto) {
     const oldImagePath = path.join(process.cwd(), 'public', integrante.foto);
     if (fs.existsSync(oldImagePath)) {
       await unlink(oldImagePath);
     }
   }
 
-  await writeFile(filePath, buffer);
+  // 🔁 Solo guarda en disco si NO estamos en producción
+  if (!esProduccion) {
+    await writeFile(filePath, buffer);
+  }
 
-  // ✅ Subir a Cloudinary
+  // ✅ Subir a Cloudinary directamente (siempre)
   let cloudinaryUrl = null;
   try {
-    const upload = await cloudinary.uploader.upload(filePath, {
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
+
+    const upload = await cloudinary.uploader.upload(dataUrl, {
       folder: 'carper/integrantes',
-      public_id: path.parse(fileName).name,
+      public_id: fileName.split('.')[0],
     });
+
     cloudinaryUrl = upload.secure_url;
   } catch (err) {
     console.error('Error al subir a Cloudinary:', err);
   }
 
-  // ✅ Guardar ambas rutas en MongoDB
+  // ✅ Guardar en MongoDB
   await Integrante.findByIdAndUpdate(params.id, {
-    foto: url,
-    ...(cloudinaryUrl && { cloudinaryUrl }), // solo si existe
+    cloudinaryUrl: cloudinaryUrl || '',
+    foto: esProduccion ? '' : url, // ⛔ solo guarda 'foto' si es local
   });
 
-  return new Response(JSON.stringify({ success: true, url, cloudinaryUrl }), {
-    status: 200,
-  });
+  return new Response(
+    JSON.stringify({ success: true, cloudinaryUrl, ...(esProduccion ? {} : { url }) }),
+    { status: 200 }
+  );
 }
