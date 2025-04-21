@@ -4,6 +4,7 @@ import path from 'path';
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
+import axios from 'axios'; // ✅ se necesita para descargar imágenes de Cloudinary
 
 export async function GET() {
   await dbConnect();
@@ -50,16 +51,31 @@ export async function GET() {
       foto: ''
     });
 
-    if (integrante.foto && fs.existsSync(`public${integrante.foto}`)) {
-      const imageId = workbook.addImage({
-        filename: path.join('public', integrante.foto),
-        extension: path.extname(integrante.foto).replace('.', '')
-      });
+    try {
+      let imageBuffer;
+      let extension;
 
-      sheet.addImage(imageId, {
-        tl: { col: imageColumn - 1, row: i + 1 },
-        ext: { width: 60, height: 60 }
-      });
+      // ✅ Usar Cloudinary si está disponible
+      if (integrante.cloudinaryUrl) {
+        const response = await axios.get(integrante.cloudinaryUrl, { responseType: 'arraybuffer' });
+        imageBuffer = response.data;
+        extension = path.extname(integrante.cloudinaryUrl).replace('.', '') || 'jpg';
+      }
+
+      // Si se obtuvo la imagen
+      if (imageBuffer) {
+        const imageId = workbook.addImage({
+          buffer: imageBuffer,
+          extension: extension,
+        });
+
+        sheet.addImage(imageId, {
+          tl: { col: imageColumn - 1, row: i + 1 },
+          ext: { width: 60, height: 60 }
+        });
+      }
+    } catch (err) {
+      console.error('❌ Error al obtener imagen:', err.message);
     }
   }
 
