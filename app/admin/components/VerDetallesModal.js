@@ -96,12 +96,8 @@ export default function VerDetallesModal({ open, onClose, integrante }) {
               <TableCell>{integrante.status}</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell><strong>Cargo</strong></TableCell>
-              <TableCell>{integrante.cargo || 'Por asignar'}</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell><strong>Participación</strong></TableCell>
-              <TableCell>{integrante.participacion}</TableCell>
+              <TableCell><strong>Deportista</strong></TableCell>
+              <TableCell>{integrante.deportista}</TableCell>
             </TableRow>
           </TableBody>
         </Table>

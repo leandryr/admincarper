@@ -77,6 +77,7 @@ export async function POST(req) {
   // ✅ Guardar cookie
   const res = NextResponse.json({ msg: 'Login exitoso' });
   res.cookies.set('admin', JSON.stringify({
+    _id: user._id,
     email: user.email,
     nombre: user.nombre,
     apellido: user.apellido,

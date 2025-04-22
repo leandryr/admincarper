@@ -38,7 +38,7 @@ export default function FichaIntegrantePDF({ integrante }) {
         ['Teléfono', integrante.telefono],
         ['Email', integrante.email],
         ['Status', integrante.status],
-        ['Deportista', integrante.participacion],
+        ['Deportista', integrante.deportista],
       ];
 
       autoTable(doc, {

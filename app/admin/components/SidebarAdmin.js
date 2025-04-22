@@ -26,7 +26,6 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
-import BuildIcon from '@mui/icons-material/Build'; // 🛠️ icono para mantenimiento
 
 const drawerWidth = 220;
 
@@ -197,12 +196,6 @@ export default function SidebarAdmin() {
                   <ListItemButton onClick={() => router.push('/admin/historial')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
                     <HistoryIcon sx={{ mr: 1 }} />
                     <ListItemText primary="Historial" />
-                  </ListItemButton>
-                </ListItem>
-                <ListItem disablePadding>
-                  <ListItemButton onClick={() => router.push('/admin/mantenimiento')} sx={{ px: 3, '&:hover': { bgcolor: '#fff3e0', color: '#f57f17' } }}>
-                    <BuildIcon sx={{ mr: 1 }} />
-                    <ListItemText primary="Mantenimiento" />
                   </ListItemButton>
                 </ListItem>
               </>

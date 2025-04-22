@@ -23,7 +23,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 export default function AdminPage() {
   const [stats, setStats] = useState({
     total: 0,
-    participantes: 0,
+    deportista: 0,
     activos: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -51,9 +51,9 @@ export default function AdminPage() {
         const res = await fetch('/api/integrantes');
         const data = await res.json();
         const total = data.length;
-        const participantes = data.filter(i => i.participacion === 'SI').length;
+        const deportista = data.filter(i => i.deportista === 'SI').length;
         const activos = data.filter(i => i.status === 'ACTIVO').length;
-        setStats({ total, participantes, activos });
+        setStats({ total, deportista, activos });
       } catch (err) {
         console.error('Error cargando estadísticas', err);
       } finally {
@@ -118,7 +118,7 @@ export default function AdminPage() {
                         <SportsSoccerIcon /> Deportista
                       </Typography>
                       <Typography variant="h3" fontWeight="bold" color="success.main">
-                        {stats.participantes}
+                        {stats.deportista}
                       </Typography>
                       <Typography variant="body2">
                         Confirmados para próximos eventos

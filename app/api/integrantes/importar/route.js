@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
+import Historial from '@/models/Historial';
+import { headers } from 'next/headers';
 
 export async function POST(req) {
   try {
@@ -13,6 +15,18 @@ export async function POST(req) {
     }
 
     const nuevos = [];
+    const cookieHeader = headers().get('cookie') || '';
+    const match = cookieHeader.match(/admin=([^;]+)/);
+    let user = null;
+    if (match) {
+      try {
+        user = JSON.parse(decodeURIComponent(match[1]));
+      } catch (err) {
+        console.warn('❌ Error al parsear usuario:', err);
+      }
+    }
+
+    const ip = headers().get('x-forwarded-for') || 'IP no disponible';
 
     // Buscar el último código registrado en BD para seguir el correlativo
     const ultimo = await Integrante.findOne({ codigo: /^CC\d{5}$/ }).sort({ codigo: -1 });
@@ -60,6 +74,19 @@ export async function POST(req) {
 
         await nuevo.save();
         nuevos.push(nuevo);
+      }
+    }
+
+    // ✅ Registrar historial (asistente o superadmin)
+    if (user && nuevos.length > 0) {
+      try {
+        await Historial.create({
+          usuario: user._id,
+          accion: `Importó ${nuevos.length} integrantes desde Excel`,
+          ip
+        });
+      } catch (err) {
+        console.warn('⚠️ No se pudo registrar historial de importación:', err);
       }
     }
 

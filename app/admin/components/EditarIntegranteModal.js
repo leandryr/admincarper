@@ -44,42 +44,65 @@ export default function EditarIntegranteModal({ open, onClose, integrante, onGua
     if (e.target.files[0]) handleFile(e.target.files[0]);
   };
 
+  const registrarHistorial = async (accion) => {
+    try {
+      await fetch('/api/historial', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion }),
+      });
+    } catch (err) {
+      console.warn('⚠️ No se pudo registrar historial:', err);
+    }
+  };
+
   const subirFoto = async () => {
-    if (!nuevaFoto) return;
     const formData = new FormData();
     formData.append('foto', nuevaFoto);
     const res = await fetch(`/api/integrantes-id/${form._id}/foto`, {
       method: 'POST',
       body: formData,
     });
+
     if (res.ok) {
       const data = await res.json();
-      setSnack({ open: true, message: 'Foto subida correctamente ✅', severity: 'success' });
-
-      // ✅ Agregado: Actualizar cloudinaryUrl en el form al subir la foto
       setForm(prev => ({
         ...prev,
         cloudinaryUrl: data.cloudinaryUrl || '',
       }));
-
-      setPreview('');
+      setSnack({ open: true, message: 'Foto subida correctamente ✅', severity: 'success' });
     }
   };
 
   const guardarCambios = async () => {
-    await fetch(`/api/integrantes-id/${form._id}`, {
+    const nombreCompleto = `${form.nombres} ${form.apPaterno}`;
+    const seSubioFoto = !!nuevaFoto;
+
+    const res = await fetch(`/api/integrantes-id/${form._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    setSnack({ open: true, message: 'Cambios guardados correctamente ✅', severity: 'success' });
 
-    if (nuevaFoto) {
-      await subirFoto();
+    if (res.ok) {
+      setSnack({ open: true, message: 'Cambios guardados correctamente ✅', severity: 'success' });
+
+      if (seSubioFoto) {
+        await subirFoto();
+      }
+
+      // 📌 Historial detallado según acción
+      if (seSubioFoto && res.ok) {
+        await registrarHistorial(`Editó y subió nueva foto de ${nombreCompleto}`);
+      } else if (seSubioFoto) {
+        await registrarHistorial(`Subió nueva foto de ${nombreCompleto}`);
+      } else {
+        await registrarHistorial(`Editó al integrante ${nombreCompleto}`);
+      }
+
+      onGuardar?.();
+      setTimeout(() => window.location.reload(), 800);
     }
-
-    onGuardar?.();
-    setTimeout(() => window.location.reload(), 800);
   };
 
   const style = {
@@ -115,41 +138,11 @@ export default function EditarIntegranteModal({ open, onClose, integrante, onGua
               <MenuItem value="DNI">DNI</MenuItem>
               <MenuItem value="CEXT">CEXT</MenuItem>
             </TextField>
-            <TextField
-              label="Número Documento"
-              name="docNumero"
-              value={form.docNumero || ''}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="N° Socio"
-              name="numeroSocio"
-              value={form.numeroSocio || ''}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Ap. Paterno"
-              name="apPaterno"
-              value={form.apPaterno || ''}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Ap. Materno"
-              name="apMaterno"
-              value={form.apMaterno || ''}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Nombres"
-              name="nombres"
-              value={form.nombres || ''}
-              onChange={handleChange}
-              fullWidth
-            />
+            <TextField label="Número Documento" name="docNumero" value={form.docNumero || ''} onChange={handleChange} fullWidth />
+            <TextField label="N° Socio" name="numeroSocio" value={form.numeroSocio || ''} onChange={handleChange} fullWidth />
+            <TextField label="Ap. Paterno" name="apPaterno" value={form.apPaterno || ''} onChange={handleChange} fullWidth />
+            <TextField label="Ap. Materno" name="apMaterno" value={form.apMaterno || ''} onChange={handleChange} fullWidth />
+            <TextField label="Nombres" name="nombres" value={form.nombres || ''} onChange={handleChange} fullWidth />
             <TextField
               select
               label="Sexo"
@@ -161,28 +154,9 @@ export default function EditarIntegranteModal({ open, onClose, integrante, onGua
               <MenuItem value="M">Masculino</MenuItem>
               <MenuItem value="F">Femenino</MenuItem>
             </TextField>
-            <TextField
-              label="Fecha Nac. (dd/mm/aaaa)"
-              name="fechaNacimiento"
-              value={form.fechaNacimiento || ''}
-              onChange={handleChange}
-              placeholder="19/04/1994"
-              fullWidth
-            />
-            <TextField
-              label="Teléfono"
-              name="telefono"
-              value={form.telefono || ''}
-              onChange={handleChange}
-              fullWidth
-            />
-            <TextField
-              label="Email"
-              name="email"
-              value={form.email || ''}
-              onChange={handleChange}
-              fullWidth
-            />
+            <TextField label="Fecha Nac. (dd/mm/aaaa)" name="fechaNacimiento" value={form.fechaNacimiento || ''} onChange={handleChange} placeholder="19/04/1994" fullWidth />
+            <TextField label="Teléfono" name="telefono" value={form.telefono || ''} onChange={handleChange} fullWidth />
+            <TextField label="Email" name="email" value={form.email || ''} onChange={handleChange} fullWidth />
 
             <Box display="flex" alignItems="center" gap={2} pt={2}>
               <Avatar

@@ -4,6 +4,7 @@ import path from 'path';
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
+import axios from 'axios';
 
 export async function GET() {
   await dbConnect();
@@ -12,7 +13,7 @@ export async function GET() {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Integrantes');
 
-  // 🎯 Fila título profesional
+  // 🎯 Título
   sheet.mergeCells('A1:O1');
   const titleCell = sheet.getCell('A1');
   titleCell.value = 'Listado de Integrantes del Club CARPER';
@@ -20,7 +21,7 @@ export async function GET() {
   titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
   sheet.getRow(1).height = 30;
 
-  // 🎯 Encabezado
+  // 🎯 Encabezados
   const encabezado = [
     'Código', 'AP PATERNO', 'AP MATERNO', 'NOMBRES', 'SEXO',
     'NUMERO DE SOCIO', 'TIPO_DOC', 'DOC_NUMERO', 'FECHA_NAC',
@@ -33,9 +34,9 @@ export async function GET() {
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF2E7D32' } // Verde institucional
+      fgColor: { argb: 'FF2E7D32' }
     };
-    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; // Blanco
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
     sheet.getColumn(i + 1).width = 20;
   });
@@ -58,38 +59,51 @@ export async function GET() {
       integrante.email,
       integrante.status,
       integrante.cargo,
-      integrante.participacion,
+      integrante.deportista,
       ''
     ]);
     row.height = 60;
 
-    // 📸 Agrega imagen si existe
-    if (integrante.foto && fs.existsSync(`public${integrante.foto}`)) {
-      const imageId = workbook.addImage({
-        filename: path.join('public', integrante.foto),
-        extension: path.extname(integrante.foto).replace('.', '')
-      });
+    try {
+      let imageBuffer = null;
+      let extension = 'jpg';
 
-      sheet.addImage(imageId, {
-        tl: { col: imageCol - 1, row: rowIndex - 1 },
-        ext: { width: 60, height: 60 }
-      });
+      if (integrante.cloudinaryUrl) {
+        const response = await axios.get(integrante.cloudinaryUrl, {
+          responseType: 'arraybuffer'
+        });
+        imageBuffer = response.data;
+        extension = path.extname(integrante.cloudinaryUrl).replace('.', '') || 'jpg';
+      }
+
+      if (imageBuffer) {
+        const imageId = workbook.addImage({
+          buffer: imageBuffer,
+          extension: extension,
+        });
+
+        sheet.addImage(imageId, {
+          tl: { col: imageCol - 1, row: rowIndex - 1 },
+          ext: { width: 60, height: 60 },
+        });
+      }
+    } catch (err) {
+      console.error(`❌ Error al descargar imagen Cloudinary: ${err.message}`);
     }
 
     rowIndex++;
   }
 
-  // 🖼️ Logo ajustado (más alargado en ancho)
+  // ✅ Logo institucional
   const logoPath = path.join('public', 'logo_carper.png');
   if (fs.existsSync(logoPath)) {
     const logoId = workbook.addImage({
       filename: logoPath,
-      extension: 'png'
+      extension: 'png',
     });
-
     sheet.addImage(logoId, {
       tl: { col: 0, row: 0 },
-      ext: { width: 30, height: 30 } // ✅ Ancho ajustado aquí
+      ext: { width: 30, height: 30 },
     });
   }
 
@@ -99,7 +113,7 @@ export async function GET() {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename=Integrantes_CARPER.xlsx'
-    }
+      'Content-Disposition': 'attachment; filename=Integrantes_CARPER.xlsx',
+    },
   });
 }

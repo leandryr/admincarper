@@ -18,7 +18,7 @@ const integranteSchema = new mongoose.Schema({
   email: String,
   status: { type: String, default: 'ACTIVO' },
   cargo: { type: String, default: '' },
-  participacion: { type: String, default: 'NO' },
+  deportista: { type: String, default: 'NO' },
   foto: { type: String, default: '' },
   cloudinaryUrl: { type: String, default: '' }, // ✅ agregado
   representantes: [
