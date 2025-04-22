@@ -1,10 +1,11 @@
+export const runtime = 'nodejs';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
-import axios from 'axios'; // ✅ se necesita para descargar imágenes de Cloudinary
+import axios from 'axios'; 
 
 export async function GET() {
   await dbConnect();

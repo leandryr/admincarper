@@ -1,3 +1,4 @@
+export const runtime = 'nodejs';
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';

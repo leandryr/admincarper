@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import dbConnect from '@/lib/mongodb';
 import Integrante from '@/models/Integrante';
 
