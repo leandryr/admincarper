@@ -91,7 +91,6 @@ export default function EditarIntegranteModal({ open, onClose, integrante, onGua
         await subirFoto();
       }
 
-      // 📌 Historial detallado según acción
       if (seSubioFoto && res.ok) {
         await registrarHistorial(`Editó y subió nueva foto de ${nombreCompleto}`);
       } else if (seSubioFoto) {
@@ -137,6 +136,7 @@ export default function EditarIntegranteModal({ open, onClose, integrante, onGua
             >
               <MenuItem value="DNI">DNI</MenuItem>
               <MenuItem value="CEXT">CEXT</MenuItem>
+              <MenuItem value="Pasaporte">Pasaporte</MenuItem>
             </TextField>
             <TextField label="Número Documento" name="docNumero" value={form.docNumero || ''} onChange={handleChange} fullWidth />
             <TextField label="N° Socio" name="numeroSocio" value={form.numeroSocio || ''} onChange={handleChange} fullWidth />

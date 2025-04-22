@@ -142,7 +142,6 @@ export default function AdminPage() {
                   </Grid>
                 </>
               )}
-
               {/* Instrucciones rápidas */}
               <Grid item xs={12} md={6}>
                 <Box>

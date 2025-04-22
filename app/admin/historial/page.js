@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Typography, Table, TableHead, TableBody, TableCell,
-  TableRow, TableContainer, Paper, CircularProgress, Divider,
+  TableRow, TableContainer, CircularProgress, Divider,
   Button, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField
+  TextField, Paper
 } from '@mui/material';
 
 import SidebarAdmin from '../components/SidebarAdmin';
@@ -96,7 +96,10 @@ export default function HistorialPage() {
             {cargando ? (
               <CircularProgress />
             ) : (
-              <TableContainer component={Paper}>
+              <TableContainer
+                component={Paper}
+                sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}
+              >
                 <Table size="small">
                   <TableHead>
                     <TableRow>

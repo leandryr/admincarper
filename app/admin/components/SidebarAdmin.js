@@ -2,23 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Typography,
-  Divider,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  Button
+  Box, Drawer, List, ListItem, ListItemButton, ListItemText,
+  Typography, Divider, CircularProgress, Collapse, Dialog,
+  DialogTitle, DialogContent, DialogContentText, DialogActions, Button
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import GroupIcon from '@mui/icons-material/Group';
@@ -26,31 +14,44 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 
 const drawerWidth = 220;
 
 export default function SidebarAdmin() {
-  const router = useRouter();
   const [rol, setRol] = useState(null);
   const [user, setUser] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const [openHistorial, setOpenHistorial] = useState(false);
+  const [ultimaVersion, setUltimaVersion] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/api/me');
-        if (!res.ok) return router.push('/admin/login');
         const { user } = await res.json();
         setUser(user);
         setRol(user.rol);
       } catch {
-        router.push('/admin/login');
+        window.location.href = '/admin/login';
       } finally {
         setCargando(false);
       }
     })();
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (rol === 'superadmin') {
+      fetch('/api/actualizaciones/ultima')
+        .then(res => res.json())
+        .then(data => {
+          if (data?.version) setUltimaVersion(data.version);
+        })
+        .catch(() => setUltimaVersion(''));
+    }
+  }, [rol]);
 
   const cerrarSesion = async () => {
     try {
@@ -59,28 +60,8 @@ export default function SidebarAdmin() {
       console.error('Error al cerrar sesión:', err);
     }
     localStorage.clear();
-    router.push('/admin/login');
+    window.location.href = '/admin/login';
   };
-
-  useEffect(() => {
-    let timeout;
-
-    const resetTimer = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        cerrarSesion();
-      }, 5 * 60 * 1000);
-    };
-
-    const eventos = ['mousemove', 'keydown', 'click', 'scroll'];
-    eventos.forEach(event => window.addEventListener(event, resetTimer));
-    resetTimer();
-
-    return () => {
-      clearTimeout(timeout);
-      eventos.forEach(event => window.removeEventListener(event, resetTimer));
-    };
-  }, []);
 
   const traducirRol = rol => {
     if (rol === 'superadmin') return 'Administrador';
@@ -125,22 +106,11 @@ export default function SidebarAdmin() {
       >
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-            <Box
-              sx={{
-                width: 64,
-                height: 64,
-                position: 'relative',
-                bgcolor: 'white',
-                borderRadius: '50%',
-                p: 1,
-              }}
-            >
-              <Image
-                src="/logo-carper.png"
-                alt="Logo"
-                fill
-                style={{ objectFit: 'contain' }}
-              />
+            <Box sx={{
+              width: 64, height: 64, position: 'relative',
+              bgcolor: 'white', borderRadius: '50%', p: 1
+            }}>
+              <Image src="/logo-carper.png" alt="Logo" fill style={{ objectFit: 'contain' }} />
             </Box>
           </Box>
 
@@ -162,50 +132,80 @@ export default function SidebarAdmin() {
 
           <List>
             <ListItem disablePadding>
-              <ListItemButton onClick={() => router.push('/admin')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
-                <HomeIcon sx={{ mr: 1 }} />
-                <ListItemText primary="Inicio" />
-              </ListItemButton>
+              <Link href="/admin" passHref legacyBehavior>
+                <ListItemButton sx={{ px: 3 }}>
+                  <HomeIcon sx={{ mr: 1 }} />
+                  <ListItemText primary="Inicio" />
+                </ListItemButton>
+              </Link>
             </ListItem>
 
             <ListItem disablePadding>
-              <ListItemButton onClick={() => router.push('/admin/registros')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
-                <GroupIcon sx={{ mr: 1 }} />
-                <ListItemText primary="Integrantes" />
-              </ListItemButton>
+              <Link href="/admin/registros" passHref legacyBehavior>
+                <ListItemButton sx={{ px: 3 }}>
+                  <GroupIcon sx={{ mr: 1 }} />
+                  <ListItemText primary="Integrantes" />
+                </ListItemButton>
+              </Link>
             </ListItem>
 
             {(rol === 'superadmin' || rol === 'asistente') && (
               <ListItem disablePadding>
-                <ListItemButton onClick={() => router.push('/admin/importar')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
-                  <UploadFileIcon sx={{ mr: 1 }} />
-                  <ListItemText primary="Importar" />
-                </ListItemButton>
+                <Link href="/admin/importar" passHref legacyBehavior>
+                  <ListItemButton sx={{ px: 3 }}>
+                    <UploadFileIcon sx={{ mr: 1 }} />
+                    <ListItemText primary="Importar" />
+                  </ListItemButton>
+                </Link>
               </ListItem>
             )}
 
             {rol === 'superadmin' && (
               <>
                 <ListItem disablePadding>
-                  <ListItemButton onClick={() => router.push('/admin/usuarios')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
-                    <PeopleAltIcon sx={{ mr: 1 }} />
-                    <ListItemText primary="Usuarios" />
-                  </ListItemButton>
+                  <Link href="/admin/usuarios" passHref legacyBehavior>
+                    <ListItemButton sx={{ px: 3 }}>
+                      <PeopleAltIcon sx={{ mr: 1 }} />
+                      <ListItemText primary="Usuarios" />
+                    </ListItemButton>
+                  </Link>
                 </ListItem>
+
                 <ListItem disablePadding>
-                  <ListItemButton onClick={() => router.push('/admin/historial')} sx={{ px: 3, '&:hover': { bgcolor: '#c8e6c9', color: '#1b5e20' } }}>
+                  <ListItemButton onClick={() => setOpenHistorial(!openHistorial)} sx={{ px: 3 }}>
                     <HistoryIcon sx={{ mr: 1 }} />
                     <ListItemText primary="Historial" />
+                    {openHistorial ? <ExpandLess /> : <ExpandMore />}
                   </ListItemButton>
                 </ListItem>
+
+                <Collapse in={openHistorial} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    <Link href="/admin/historial" passHref legacyBehavior>
+                      <ListItemButton sx={{ pl: 6 }}>
+                        <ListItemText primary="Acciones" />
+                      </ListItemButton>
+                    </Link>
+                    <Link href="/admin/actualizaciones" passHref legacyBehavior>
+                      <ListItemButton sx={{ pl: 6 }}>
+                        <ListItemText primary="Actualizaciones" />
+                      </ListItemButton>
+                    </Link>
+                  </List>
+                </Collapse>
               </>
             )}
           </List>
         </Box>
 
-        <Box sx={{ mb: 2 }}>
-          <Divider sx={{ borderColor: '#a5d6a7', mx: 2 }} />
-          <ListItem disablePadding sx={{ mt: 1 }}>
+        <Box sx={{ mb: 2, px: 2 }}>
+          <Divider sx={{ borderColor: '#a5d6a7' }} />
+          <Box textAlign="center" mt={1}>
+            <Typography variant="caption" color="text.secondary">
+              {ultimaVersion ? `v${ultimaVersion}` : 'v1.0.2'}
+            </Typography>
+          </Box>
+          <ListItem disablePadding>
             <ListItemButton
               onClick={() => setConfirmLogoutOpen(true)}
               sx={{ px: 3, '&:hover': { bgcolor: '#ffcdd2', color: '#c62828' } }}
@@ -226,10 +226,7 @@ export default function SidebarAdmin() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmLogoutOpen(false)}>Cancelar</Button>
-          <Button color="error" onClick={() => {
-            setConfirmLogoutOpen(false);
-            cerrarSesion();
-          }}>
+          <Button color="error" onClick={cerrarSesion}>
             Cerrar sesión
           </Button>
         </DialogActions>
